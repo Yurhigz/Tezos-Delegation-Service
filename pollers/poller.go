@@ -1,15 +1,10 @@
 package poller
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"kiln-projects/database"
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 // Block Height = level
@@ -41,21 +36,4 @@ func PollTzkt(url string) ([]Delegations, error) {
 	}
 
 	return DelegationsList, nil
-}
-
-func BulkAddingDelegations(parentsContext context.Context, DelegationsList []Delegations) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
-	defer cancel()
-
-	_, err := database.DBPool.CopyFrom(ctx, pgx.Identifier{"delegations"}, []string{"Timestamp", "SenderAddress", "Amount", "BlockHeight"}, pgx.CopyFromSlice(len(DelegationsList), func(i int) ([]any, error) {
-		return []any{DelegationsList[i].Timestamp, DelegationsList[i].Sender.Address, DelegationsList[i].Amount, DelegationsList[i].BlockHeight}, nil
-	}))
-
-	if err != nil {
-		return fmt.Errorf("ERR | Error inserting delegations : %v", err)
-	}
-
-	log.Printf("%d Delegations added successfully, last BlockHeight %v", len(DelegationsList), DelegationsList[len(DelegationsList)-1].BlockHeight)
-	return nil
-
 }
