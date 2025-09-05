@@ -3,10 +3,13 @@ package database
 import (
 	"context"
 	"fmt"
+	"kiln-projects/database"
+	poller "kiln-projects/pollers"
 	"log"
 	"runtime"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -41,4 +44,49 @@ func InitDB(ctx context.Context, dbURL string) error {
 
 	log.Println("DB Connexions pool initialized...")
 	return nil
+}
+
+func BulkAddingDelegations(parentsContext context.Context, DelegationsList []poller.Delegations) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
+	defer cancel()
+
+	_, err := database.DBPool.CopyFrom(ctx, pgx.Identifier{"delegations"}, []string{"Timestamp", "SenderAddress", "Amount", "BlockHeight"}, pgx.CopyFromSlice(len(DelegationsList), func(i int) ([]any, error) {
+		return []any{DelegationsList[i].Timestamp, DelegationsList[i].Sender.Address, DelegationsList[i].Amount, DelegationsList[i].BlockHeight}, nil
+	}))
+
+	if err != nil {
+		return fmt.Errorf("ERR | Error inserting delegations : %v", err)
+	}
+
+	log.Printf("%d Delegations added successfully, last BlockHeight %v", len(DelegationsList), DelegationsList[len(DelegationsList)-1].BlockHeight)
+	return nil
+
+}
+
+// Par défault on récupère les informations par 100 , les plus récents en premier
+func DelegationsRetrieval(parentsContext context.Context, year int) ([]poller.Delegations, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
+	defer cancel()
+
+	var DelegationsBulk []poller.Delegations
+
+	query := `SELECT adress,timestamp,amout,blockhaight FROM delegations WHERE YEAR(timestamp) = $1 ORDER BY timestamp LIMIT 100`
+
+	rows, err := DBPool.Query(ctx, query, year)
+	if err != nil {
+		return DelegationsBulk, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var Delegation poller.Delegations
+		err = rows.Scan(Delegation.Sender.Address, Delegation.Timestamp, Delegation.Amount, Delegation.BlockHeight)
+		if err != nil {
+			return DelegationsBulk, err
+		}
+		DelegationsBulk = append(DelegationsBulk, Delegation)
+	}
+
+	return DelegationsBulk, nil
+
 }
