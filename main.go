@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"kiln-projects/api/handlers"
 	"kiln-projects/database"
 	poller "kiln-projects/pollers"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -21,7 +24,7 @@ func main() {
 
 	var CurrentDelegationsBatch []poller.Delegations
 	var Offset int
-	url := "https://cryptoslam.api.tzkt.io/v1/operations/delegations?select=timestamp,sender,amount,level&limit=200"
+	url := fmt.Sprintf("https://cryptoslam.api.tzkt.io/v1/operations/delegations?select=timestamp,sender,amount,level&limit=200&level=%v", Offset)
 	go func() {
 		for {
 			CurrentDelegationsBatch, err := poller.PollTzkt(url)
@@ -31,7 +34,7 @@ func main() {
 				continue
 			}
 			// stockage de CurrentDelegationsBatch dans la DB puis remise à zéro de la value et update du pointeur de sauvegarde
-			err = poller.BulkAddingDelegations(parentCtx, CurrentDelegationsBatch)
+			err = database.BulkAddingDelegations(parentCtx, CurrentDelegationsBatch)
 			if err != nil {
 				log.Printf("ERR | Error bulk adding data in the DB : %w", err)
 				time.Sleep(15 * time.Second)
@@ -42,5 +45,8 @@ func main() {
 		}
 
 	}()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /xtz/delegations", handlers.GetDelegations)
 
 }
