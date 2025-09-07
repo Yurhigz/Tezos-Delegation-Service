@@ -27,16 +27,16 @@ func main() {
 	url := fmt.Sprintf("https://cryptoslam.api.tzkt.io/v1/operations/delegations?select=timestamp,sender,amount,level&limit=200&level=%v", Offset)
 	go func() {
 		for {
-			CurrentDelegationsBatch, err := poller.PollTzkt(url)
+			CurrentDelegationsBatch, err = poller.PollTzkt(url)
 			if err != nil {
-				log.Printf("ERR | Error polling data : %w", err)
+				log.Printf("ERR | Error polling data : %v", err)
 				time.Sleep(15 * time.Second)
 				continue
 			}
 			// stockage de CurrentDelegationsBatch dans la DB puis remise à zéro de la value et update du pointeur de sauvegarde
 			err = database.BulkAddingDelegations(parentCtx, CurrentDelegationsBatch)
 			if err != nil {
-				log.Printf("ERR | Error bulk adding data in the DB : %w", err)
+				log.Printf("ERR | Error bulk adding data in the DB : %v", err)
 				time.Sleep(15 * time.Second)
 				continue
 			}
