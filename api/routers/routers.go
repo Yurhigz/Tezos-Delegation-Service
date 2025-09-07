@@ -15,12 +15,12 @@ func NewRouter() *Router {
 	}
 }
 
-// Implémentation de l'interface http.Handler
+// Implémentation de l'interface http.Handler pour utiliser le router directement en tant que paramètre du serveur http
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(w, req)
 }
 
-func InitRoutes(mux *http.ServeMux) {
+func (r *Router) InitRoutes() {
 	// Possibilité d'ajouter des routes supplémentaires sans dénaturer le code
-	mux.HandleFunc("GET /xtz/delegations", handlers.GetDelegations)
+	r.mux.HandleFunc("GET /xtz/delegations", handlers.GetDelegations)
 }
