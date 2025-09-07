@@ -14,8 +14,8 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 
 	// vérifier qu'on a que les deux paramètres timestamp et level/blockheight
 	params := map[string]bool{
-		"timestamp":   true,
-		"blockheight": true,
+		"timestamp": true,
+		"level":     true,
 	}
 	for key := range query {
 		if !params[key] {
@@ -37,26 +37,27 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 		timestampValue = time.Now().Year()
 	}
 
-	blockheight := query.Get("blockheight")
-	var blockheightValue int64
-	if blockheight != "" {
-		val, err := strconv.Atoi(blockheight)
+	level := query.Get("level")
+	var levelValue int64
+	if level != "" {
+		val, err := strconv.Atoi(level)
 		if err != nil {
-			http.Error(w, "invalid number as blockheightValue : must be an int superior to 0", http.StatusBadRequest)
+			http.Error(w, "invalid number as level : must be an int superior to 0", http.StatusBadRequest)
 			return
 		}
-		blockheightValue = int64(val)
+		levelValue = int64(val)
 	}
 
-	DelegationsList, err := database.DelegationsRetrieval(r.Context(), timestampValue, blockheightValue)
+	DelegationsList, err := database.DelegationsRetrieval(r.Context(), timestampValue, levelValue)
 
 	if err != nil {
 		http.Error(w, "delegations retrieval error reaching the DB", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string][]poller.Delegations{
-		"Delegations": DelegationsList,
+		"Data": DelegationsList,
 	})
 }
