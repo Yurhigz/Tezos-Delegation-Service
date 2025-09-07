@@ -1,0 +1,7 @@
+## Test endpoint sans params
+
+GET http://localhost:3000/xtz/delegations?timestamp=2018
+
+## Test endpoint avec params 
+
+GET http://localhost:3000/xtz/delegations?timestamp=2018&level=5
