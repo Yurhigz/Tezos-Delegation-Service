@@ -1,6 +1,7 @@
 package test
 
 import (
+	poller "kiln-projects/pollers"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test pour PollTzkt - le plus important à tester car il fait l'appel HTTP
 func TestPollTzkt(t *testing.T) {
 	// Test avec une réponse valide
 	mockResponse := `[
@@ -28,7 +28,7 @@ func TestPollTzkt(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result, err := PollTzkt(server.URL)
+	result, err := poller.PollTzkt(server.URL)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -45,25 +45,10 @@ func TestPollTzkt_InvalidJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result, err := PollTzkt(server.URL)
+	result, err := poller.PollTzkt(server.URL)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-}
-
-// Test pour GetDelegations - cas nominal
-func TestGetDelegations_ValidRequest(t *testing.T) {
-	req := httptest.NewRequest("GET", "/xtz/delegations", nil)
-	w := httptest.NewRecorder()
-
-	// Note: ce test nécessiterait un mock de la DB ou une DB de test
-	// Pour l'exercice, on peut le laisser en commentaire ou utiliser une DB en mémoire
-
-	// GetDelegations(w, req)
-	// assert.Equal(t, 200, w.Code)
-	// assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-
-	t.Skip("Test nécessite une DB de test - à implémenter selon l'infrastructure choisie")
 }
 
 // Test pour GetDelegations - paramètres invalides
