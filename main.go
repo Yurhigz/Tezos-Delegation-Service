@@ -3,50 +3,74 @@ package main
 import (
 	"context"
 	"fmt"
-	"kiln-projects/api/handlers"
+	"kiln-projects/api/routers"
 	"kiln-projects/database"
 	poller "kiln-projects/pollers"
 	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
+func StartPoller(ctx context.Context, baseURL string) {
+	url := baseURL
+	for {
+		delegationBatch, err := poller.PollTzkt(url)
+		if err != nil {
+			log.Printf("ERR | polling data: %v", err)
+			time.Sleep(15 * time.Second)
+			continue
+		}
+
+		if len(delegationBatch) == 0 {
+			log.Println("No new delegations, waiting…")
+			//Eventuellement possibilité de faire une progression dans l'attente avec un intervalle max d'attente
+			time.Sleep(10 * time.Minute)
+			continue
+		}
+
+		err = database.BulkAddingDelegations(ctx, delegationBatch)
+		if err != nil {
+			log.Printf("ERR | inserting into DB: %v", err)
+			time.Sleep(15 * time.Second)
+			continue
+		}
+
+		offset := delegationBatch[len(delegationBatch)-1].Level
+		url = fmt.Sprintf("%s&level.gt=%d", baseURL, offset)
+
+		log.Printf("Inserted %d delegations, next offset=%d", len(delegationBatch), offset)
+
+		time.Sleep(5 * time.Second)
+	}
+}
+
 func main() {
-
-	dbURL := "host=127.0.0.1 user=postgres password=postgres dbname=tzktdb port=5442 sslmode=disable TimeZone=Asia/Shanghai"
-	parentCtx := context.Background()
-	err := database.InitDB(parentCtx, dbURL)
-
+	ctx := context.Background()
+	err := godotenv.Load()
 	if err != nil {
+		log.Println("no .env file found")
+		return
+	}
+	dbURL := os.Getenv("DB_URl")
+
+	if err := database.InitDB(ctx, dbURL); err != nil {
 		log.Printf("ERR   | %v", err)
 		return
 	}
 
-	var CurrentDelegationsBatch []poller.Delegations
-	var Offset int
-	url := fmt.Sprintf("https://cryptoslam.api.tzkt.io/v1/operations/delegations?select=timestamp,sender,amount,level&limit=200&level=%v", Offset)
-	go func() {
-		for {
-			CurrentDelegationsBatch, err = poller.PollTzkt(url)
-			if err != nil {
-				log.Printf("ERR | Error polling data : %v", err)
-				time.Sleep(15 * time.Second)
-				continue
-			}
-			// stockage de CurrentDelegationsBatch dans la DB puis remise à zéro de la value et update du pointeur de sauvegarde
-			err = database.BulkAddingDelegations(parentCtx, CurrentDelegationsBatch)
-			if err != nil {
-				log.Printf("ERR | Error bulk adding data in the DB : %v", err)
-				time.Sleep(15 * time.Second)
-				continue
-			}
-			Offset = int(CurrentDelegationsBatch[len(CurrentDelegationsBatch)-1].BlockHeight)
-			time.Sleep(time.Minute)
-		}
+	baseUrl := os.Getenv("TZKT_API_ENDPOINT")
 
-	}()
+	go StartPoller(ctx, baseUrl)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /xtz/delegations", handlers.GetDelegations)
+	router := routers.NewRouter()
+	router.InitRoutes()
+
+	err = http.ListenAndServe(":3000", router)
+	if err != nil {
+		log.Fatalf("ERR | server: %v", err)
+	}
 
 }
