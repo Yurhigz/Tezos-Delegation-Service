@@ -6,6 +6,7 @@ import (
 	poller "kiln-projects/pollers"
 	"log"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -63,15 +64,32 @@ func BulkAddingDelegations(parentsContext context.Context, DelegationsList []pol
 }
 
 // Par défault on récupère les informations par 100 , les plus récents en premier
-func DelegationsRetrieval(parentsContext context.Context, year int, blockheight int) ([]poller.Delegations, error) {
+func DelegationsRetrieval(parentsContext context.Context, year int, blockheight int64) ([]poller.Delegations, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
 	defer cancel()
-
+	query := `SELECT adress,timestamp,amout,blockhaight FROM delegations`
 	var DelegationsBulk []poller.Delegations
+	queryParameters := []string{}
+	args := []interface{}{}
+	argID := 1
 
-	query := `SELECT adress,timestamp,amout,blockhaight FROM delegations WHERE YEAR(timestamp) = $1 AND blockheight = $2 ORDER BY timestamp LIMIT 100`
+	if year != 0 {
+		queryParameters = append(queryParameters, fmt.Sprintf("DATE_PART('year', timestamp) = $%d", argID))
+		args = append(args, year)
+		argID++
+	}
 
-	rows, err := DBPool.Query(ctx, query, year, blockheight)
+	if blockheight != 0 {
+		queryParameters = append(queryParameters, fmt.Sprintf("blockheight = $%d", argID))
+		args = append(args, blockheight)
+		argID++
+	}
+
+	if len(queryParameters) > 0 {
+		query += " WHERE " + strings.Join(queryParameters, " AND ")
+	}
+
+	rows, err := DBPool.Query(ctx, query, args)
 	if err != nil {
 		return DelegationsBulk, err
 	}
