@@ -50,25 +50,25 @@ func BulkAddingDelegations(parentsContext context.Context, DelegationsList []pol
 	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
 	defer cancel()
 
-	_, err := DBPool.CopyFrom(ctx, pgx.Identifier{"delegations"}, []string{"Timestamp", "SenderAddress", "Amount", "BlockHeight"}, pgx.CopyFromSlice(len(DelegationsList), func(i int) ([]any, error) {
-		return []any{DelegationsList[i].Timestamp, DelegationsList[i].Sender.Address, DelegationsList[i].Amount, DelegationsList[i].BlockHeight}, nil
+	_, err := DBPool.CopyFrom(ctx, pgx.Identifier{"delegations"}, []string{"timestamp", "delegator", "amount", "level"}, pgx.CopyFromSlice(len(DelegationsList), func(i int) ([]any, error) {
+		return []any{DelegationsList[i].Timestamp, DelegationsList[i].Delegator, DelegationsList[i].Amount, DelegationsList[i].Level}, nil
 	}))
 
 	if err != nil {
 		return fmt.Errorf("ERR | Error inserting delegations : %v", err)
 	}
 
-	log.Printf("%d Delegations added successfully, last BlockHeight %v", len(DelegationsList), DelegationsList[len(DelegationsList)-1].BlockHeight)
+	log.Printf("%d Delegations added successfully, last level %v", len(DelegationsList), DelegationsList[len(DelegationsList)-1].Level)
 	return nil
 
 }
 
-// Par défault on récupère les informations par 100 , les plus récents en premier
-func DelegationsRetrieval(parentsContext context.Context, year int, blockheight int64) ([]poller.Delegations, error) {
+// Par défault on récupère les informations par 10000 , les plus récents en premier
+func DelegationsRetrieval(parentsContext context.Context, year int, level int64) ([]poller.Delegations, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
 	defer cancel()
-	query := `SELECT adress,timestamp,amout,blockhaight FROM delegations`
-	var DelegationsBulk []poller.Delegations
+	query := `SELECT delegator,timestamp,amount,level FROM delegations`
+
 	queryParameters := []string{}
 	args := []interface{}{}
 	argID := 1
@@ -79,9 +79,9 @@ func DelegationsRetrieval(parentsContext context.Context, year int, blockheight 
 		argID++
 	}
 
-	if blockheight != 0 {
-		queryParameters = append(queryParameters, fmt.Sprintf("blockheight = $%d", argID))
-		args = append(args, blockheight)
+	if level != 0 {
+		queryParameters = append(queryParameters, fmt.Sprintf("level = $%d", argID))
+		args = append(args, level)
 		argID++
 	}
 
@@ -89,7 +89,10 @@ func DelegationsRetrieval(parentsContext context.Context, year int, blockheight 
 		query += " WHERE " + strings.Join(queryParameters, " AND ")
 	}
 
-	rows, err := DBPool.Query(ctx, query, args)
+	query += " ORDER BY timestamp DESC LIMIT 1000"
+
+	rows, err := DBPool.Query(ctx, query, args...)
+	var DelegationsBulk []poller.Delegations
 	if err != nil {
 		return DelegationsBulk, err
 	}
@@ -97,7 +100,7 @@ func DelegationsRetrieval(parentsContext context.Context, year int, blockheight 
 
 	for rows.Next() {
 		var Delegation poller.Delegations
-		err = rows.Scan(Delegation.Sender.Address, Delegation.Timestamp, Delegation.Amount, Delegation.BlockHeight)
+		err = rows.Scan(&Delegation.Delegator, &Delegation.Timestamp, &Delegation.Amount, &Delegation.Level)
 		if err != nil {
 			return DelegationsBulk, err
 		}

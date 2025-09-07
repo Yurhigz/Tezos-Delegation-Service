@@ -7,8 +7,8 @@ CREATE DATABASE tzktdb;
 DROP TABLE IF EXISTS delegations CASCADE;
 CREATE TABLE delegations (
     id SERIAL PRIMARY KEY,
-    address VARCHAR(50) NOT NULL UNIQUE,
+    delegator VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
     amount BIGINT NOT NULL,
-    blockheight BIGINT NOT NULL
+    level BIGINT NOT NULL
 );
