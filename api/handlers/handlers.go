@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"kiln-projects/database"
 	poller "kiln-projects/pollers"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func GetDelegations(w http.ResponseWriter, r *http.Request) {
@@ -20,14 +23,40 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	var timestampValue int
 
 	timestamp := query.Get("timestamp")
-	if timestamp == "" {
-
+	if timestamp != "" {
+		parsedTime, err := time.Parse("2006", timestamp)
+		if err != nil {
+			http.Error(w, "invalid timestamp format: must be a year (YYYY)", http.StatusBadRequest)
+			return
+		}
+		timestampValue = parsedTime.Year()
+	} else {
+		timestampValue = time.Now().Year()
 	}
+
 	blockheight := query.Get("blockheight")
-	var DelegationsList []poller.Delegations
+	var blockheightValue int64
+	if blockheight != "" {
+		val, err := strconv.Atoi(blockheight)
+		if err != nil {
+			http.Error(w, "invalid number as blockheightValue : must be an int superior to 0", http.StatusBadRequest)
+			return
+		}
+		blockheightValue = int64(val)
+	}
 
-	database.DelegationsRetrieval(r.Context(), timestamp, blockheight)
+	DelegationsList, err := database.DelegationsRetrieval(r.Context(), timestampValue, blockheightValue)
 
+	if err != nil {
+		http.Error(w, "delegations retrieval error reaching the DB", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string][]poller.Delegations{
+		"Delegations": DelegationsList,
+	})
 }
