@@ -14,27 +14,27 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 
 	// vérifier qu'on a que les deux paramètres timestamp et level/blockheight
 	params := map[string]bool{
-		"timestamp": true,
-		"level":     true,
+		"year":  true,
+		"level": true,
 	}
 	for key := range query {
 		if !params[key] {
-			http.Error(w, "invalid query parameters, only available parameters are timestamp and level", http.StatusBadRequest)
+			http.Error(w, "invalid query parameters, only available parameters are year and level", http.StatusBadRequest)
 			return
 		}
 	}
-	var timestampValue int
+	var yearValue int
 
-	timestamp := query.Get("timestamp")
-	if timestamp != "" {
-		parsedTime, err := time.Parse("2006", timestamp)
+	year := query.Get("year")
+	if year != "" {
+		parsedTime, err := time.Parse("2006", year)
 		if err != nil {
-			http.Error(w, "invalid timestamp format: must be a year (YYYY)", http.StatusBadRequest)
+			http.Error(w, "invalid year format: must be a year (YYYY)", http.StatusBadRequest)
 			return
 		}
-		timestampValue = parsedTime.Year()
+		yearValue = parsedTime.Year()
 	} else {
-		timestampValue = time.Now().Year()
+		yearValue = time.Now().Year()
 	}
 
 	level := query.Get("level")
@@ -48,7 +48,7 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 		levelValue = int64(val)
 	}
 
-	DelegationsList, err := database.DelegationsRetrieval(r.Context(), timestampValue, levelValue)
+	DelegationsList, err := database.DelegationsRetrieval(r.Context(), yearValue, levelValue)
 
 	if err != nil {
 		http.Error(w, "delegations retrieval error reaching the DB", http.StatusInternalServerError)
@@ -58,6 +58,6 @@ func GetDelegations(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string][]poller.Delegations{
-		"Data": DelegationsList,
+		"data": DelegationsList,
 	})
 }
