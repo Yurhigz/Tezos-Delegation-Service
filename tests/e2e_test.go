@@ -34,7 +34,7 @@ func TestEndToEndDelegations(t *testing.T) {
 	t.Run("E2E Delegations", func(t *testing.T) {
 		ctx := context.Background()
 		// Chargement de mes variables d'environnement
-		err := godotenv.Load()
+		err := godotenv.Load("../.env")
 		if err != nil {
 			log.Println("no .env file found")
 			return
