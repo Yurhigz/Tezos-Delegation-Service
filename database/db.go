@@ -46,6 +46,13 @@ func InitDB(ctx context.Context, dbURL string) error {
 	return nil
 }
 
+func CloseDB() {
+	if DBPool != nil {
+		DBPool.Close()
+		log.Println("Database pool closed")
+	}
+}
+
 func BulkAddingDelegations(parentsContext context.Context, DelegationsList []poller.Delegations) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
 	defer cancel()
