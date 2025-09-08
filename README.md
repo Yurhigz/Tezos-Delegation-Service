@@ -62,18 +62,23 @@ GET http://localhost:3000/xtz/delegations?timestamp=2018&level=251000
 1. Unzip the folder:
 2. Get inside the main folder : 
     ```bash
-        cd ./kiln-projects 
+    cd ./kiln-projects 
     ```
 3. Build the container : 
     ```bash
-        docker-compose up -d 
+    docker-compose up -d 
     ```
-4. Run the service:
+4. Install the go packages :
+    ```bash
+    go mod tidy
+    ```
+    
+5. Run the service:
 
    ```bash
    go run main.go
    ```
-5. API available at:
+6. API available at:
 
    ```
    http://localhost:3000/xtz/delegations
