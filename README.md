@@ -118,6 +118,22 @@ psql -U postgres
 
 ---
 
+## Testing
+
+Unit and integration tests are provided to validate the main components:
+
+- Polling: valid JSON, invalid JSON, and API unreachable cases.
+- Database: insertion and retrieval of delegations (with a test database).
+- REST API: endpoint tested with query parameters.
+
+Run tests with:
+```bash
+go test ./tests -v
+
+```
+
+--- 
+
 ## Possible Improvements
 
 * Replace polling with **TzKT WebSocket API** for real-time data.
