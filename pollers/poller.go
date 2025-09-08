@@ -2,7 +2,6 @@ package poller
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 )
@@ -33,7 +32,7 @@ func PollTzkt(url string) ([]Delegations, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Println("got a response")
+	// log.Println("got a response")
 
 	err = json.NewDecoder(resp.Body).Decode(&rawDelegationsList)
 	if err != nil {
