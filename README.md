@@ -124,3 +124,5 @@ psql -U postgres
 * Add a first request to the DB to get the latest level in case of application restart to prevent from reidexing all the DB again.
 * Add another query parameter such as `limit` to allow users to decide how many documents they want.
 * Segment more the project by moving the `StartPoller`function in another folder.
+* Add a Circuit Breaker to prevent API shortage.
+* Rate limiting and retry logic could be considered to reduce the impact on TZKT API and improve resilience.
