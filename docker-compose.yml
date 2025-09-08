@@ -13,5 +13,17 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
+  postgres-test:
+    image: postgres:latest
+    container_name: postgres-kiln-test
+    environment:
+      POSTGRES_USER: ${BDD_USER_TEST}
+      POSTGRES_PASSWORD: ${BDD_PWD_TEST}
+    ports:
+      - "${BDD_PORT_IN_TEST}:${BDD_PORT_OUT_TEST}"
+    volumes:
+      - postgres-data-test:/var/lib/postgresql/data
+      - ./database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 volumes:
   postgres-data:
+  postgres-data-test:
