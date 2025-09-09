@@ -20,7 +20,7 @@ GET /xtz/delegations
 ```
 
 4. The endpoint supports **two optional query parameters**:  
-- `timestamp` → year in format `YYYY`  
+- `year` → year in format `YYYY`  
 - `level` → block height  
 
 ---
