@@ -46,7 +46,7 @@ GET http://localhost:3000/xtz/delegations?timestamp=2018&level=251000
     }
   ]
 }
-````
+```
 
 ---
 
