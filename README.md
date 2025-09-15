@@ -62,7 +62,7 @@ GET http://localhost:3000/xtz/delegations?timestamp=2018&level=251000
 1. Unzip the folder:
 2. Get inside the main folder : 
     ```bash
-    cd ./kiln-projects 
+    cd ./tezos-delegation-service 
     ```
 3. Build the container : 
     ```bash
